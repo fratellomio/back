@@ -23,9 +23,13 @@ module.exports = {
         password: hashPass,
       });
 
-      const token = jwt.sign({ email: email, username: username }, 'azmi', {
-        expiresIn: '10m',
-      });
+      const token = jwt.sign(
+        { email: email, username: username },
+        process.env.secretKey,
+        {
+          expiresIn: '10m',
+        }
+      );
 
       const tempEmail = fs.readFileSync(
         './template/verificationEmail.html',
@@ -40,11 +44,15 @@ module.exports = {
       await transporter.sendMail({
         from: 'Admin',
         to: email,
-        subject: 'Verification User',
+        subject: 'User verification',
         html: tempResult,
       });
 
-      res.status(200).send('Register Success');
+      res
+        .status(200)
+        .send(
+          'Register Success. Please check your email for verification link'
+        );
     } catch (err) {
       console.log(err);
       res.status(400).send(err);
@@ -64,14 +72,14 @@ module.exports = {
 
       const isValid = await bcrypt.compare(password, nimExist.password);
 
-      if (!isValid) throw 'nim or password incorrect';
+      if (!isValid) throw 'nim or password is incorrect';
 
       if (nimExist.isVerified == false)
-        throw 'user has not been verified yet. Please check your email';
+        throw 'user is not verified yet. Please check your email';
 
       const token = jwt.sign(
         { username: nimExist.username, nim: nimExist.nim },
-        'azmi'
+        process.env.secretKey
       );
 
       res.status(200).send({
@@ -86,10 +94,11 @@ module.exports = {
       res.status(400).send(err);
     }
   },
+  logout: async (req, res) => {},
 
   keepLogin: async (req, res) => {
     try {
-      const verify = jwt.verify(req.token, 'azmi');
+      const verify = jwt.verify(req.token, process.env.secretKey);
       const result = await user.findOne({
         where: {
           nim: verify.nim,
@@ -109,7 +118,7 @@ module.exports = {
     const { token } = req.params;
 
     try {
-      const verify = jwt.verify(token, 'azmi');
+      const verify = jwt.verify(token, process.env.secretKey);
 
       await user.update(
         {
@@ -122,13 +131,13 @@ module.exports = {
         }
       );
 
-      const u = await user.findOne({
+      const verifiedUser = await user.findOne({
         where: {
           email: verify.email,
         },
       });
 
-      const { username, email, nim } = u.dataValues;
+      const { username, email, nim } = verifiedUser.dataValues;
 
       const tempEmail = fs.readFileSync(
         './template/successVerificationEmail.html',
@@ -153,4 +162,5 @@ module.exports = {
       res.status(400).send(err);
     }
   },
+  admin: async (req, res) => {},
 };

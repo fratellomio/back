@@ -11,7 +11,6 @@ server.use(cors());
 server.use(bearerToken());
 server.use(bookRoutes);
 server.use(authRoutes);
-// server.use('/auth', authRoutes);
 
 server.listen(port, () => {
   console.log(`Listening on port ${port}`);
